@@ -2,103 +2,514 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Location Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Tracker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            margin: 20px;
-            cursor: pointer;
-            background-color: #4CAF50;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
             color: white;
-            border: none;
-            border-radius: 5px;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        #status {
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #4dff4d;
+            text-shadow: 0 0 10px rgba(77, 255, 77, 0.5);
+        }
+        
+        .status-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 20, 40, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .status-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        #statusIndicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #ff4d4d;
+        }
+        
+        #statusIndicator.active {
+            background-color: #4dff4d;
+            box-shadow: 0 0 10px #4dff4d;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 18px 15px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #toggleBtn {
+            background: linear-gradient(to right, #4dff4d, #00cc00);
+            color: #003300;
+        }
+        
+        #toggleBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(77, 255, 77, 0.4);
+        }
+        
+        #clearBtn {
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            color: #330000;
+        }
+        
+        #clearBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 94, 98, 0.4);
+        }
+        
+        #clearBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .track-list-container {
+            background: rgba(0, 20, 40, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .track-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h2 {
+            font-size: 22px;
+            color: #4dff4d;
+        }
+        
+        #pointCounter {
+            background: rgba(77, 255, 77, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        #trackList {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* Стиль скроллбара */
+        #trackList::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #trackList::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        #trackList::-webkit-scrollbar-thumb {
+            background: rgba(77, 255, 77, 0.5);
+            border-radius: 4px;
+        }
+        
+        .location-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            animation: fadeIn 0.5s ease;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .location-time {
+            flex-basis: 100%;
+            font-size: 14px;
+            color: #4dff4d;
+            margin-bottom: 5px;
+        }
+        
+        .location-coords {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .coord-value {
+            font-weight: 600;
+            color: #ffcc00;
+        }
+        
+        .empty-list {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+        
+        .warning {
+            background: rgba(255, 100, 100, 0.2);
+            border-radius: 10px;
+            padding: 15px;
             margin-top: 20px;
-            color: #666;
+            text-align: center;
+            border: 1px solid rgba(255, 100, 100, 0.5);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            button {
+                padding: 15px 10px;
+                font-size: 16px;
+            }
+            
+            .location-item {
+                padding: 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <button id="toggleBtn">Старт</button>
-    <div id="status">Статус: Остановлено</div>
+    <div class="container">
+        <header>
+            <h1>Live Location Tracker</h1>
+            <p>Отслеживание вашего местоположения в реальном времени</p>
+        </header>
+        
+        <div class="status-panel">
+            <div class="status-text">
+                <span id="statusIndicator"></span>
+                <span id="statusText">Статус: Остановлено</span>
+            </div>
+            <div id="lastUpdate">Последнее: нет данных</div>
+        </div>
+        
+        <div class="button-container">
+            <button id="toggleBtn">Старт</button>
+            <button id="clearBtn" disabled>Очистить</button>
+        </div>
+        
+        <div class="track-list-container">
+            <div class="track-header">
+                <h2>История координат</h2>
+                <div id="pointCounter">0 точек</div>
+            </div>
+            <div id="trackList">
+                <div class="empty-list">Нет записанных координат</div>
+            </div>
+        </div>
+        
+        <div id="iosWarning" class="warning" style="display: none;">
+            <strong>Важно для iOS:</strong> Для работы приложения держите Telegram открытым и экран включенным!
+        </div>
+    </div>
+
     <script>
-        // Инициализация
+        // Инициализация Telegram Web App
         const webApp = Telegram.WebApp;
         webApp.ready();
+        webApp.expand();
+        
+        // Состояние приложения
         let isTracking = false;
-        let trackingInterval;
+        let watchId = null;
         let locations = [];
+        let lastRecordTime = 0;
         
         // Элементы интерфейса
         const toggleBtn = document.getElementById('toggleBtn');
-        const statusText = document.getElementById('status');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const trackList = document.getElementById('trackList');
+        const pointCounter = document.getElementById('pointCounter');
+        const iosWarning = document.getElementById('iosWarning');
         
-        // Обработчик кнопки
-        toggleBtn.addEventListener('click', () => {
+        // Проверка платформы
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            iosWarning.style.display = 'block';
+        }
+        
+        // Обработчик кнопки старт/стоп
+        toggleBtn.addEventListener('click', toggleTracking);
+        
+        // Обработчик кнопки очистки
+        clearBtn.addEventListener('click', clearTrack);
+        
+        // Переключение режима отслеживания
+        function toggleTracking() {
             if (!isTracking) {
                 startTracking();
             } else {
                 stopTracking();
             }
-        });
+        }
         
-        // Запуск отслеживания
+        // Начало отслеживания
         function startTracking() {
-            locations = []; // Очищаем предыдущие данные
-            isTracking = true;
-            toggleBtn.textContent = "Стоп";
-            statusText.textContent = "Статус: Запись...";
+            // Проверка поддержки геолокации
+            if (!navigator.geolocation) {
+                updateStatus("Геолокация не поддерживается", false);
+                return;
+            }
             
-            // Получаем позицию каждые 3 секунды
-            trackingInterval = setInterval(() => {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        const { latitude, longitude } = position.coords;
-                        const timestamp = Math.floor(Date.now() / 1000); // UNIX-время
-                        locations.push(`${timestamp},${latitude},${longitude}`);
-                        console.log(`Записано: ${timestamp}, ${latitude}, ${longitude}`);
-                    },
-                    error => {
-                        console.error("Ошибка геолокации:", error);
-                    }
-                );
-            }, 3000);
+            // Очистка предыдущих данных
+            locations = [];
+            updateTrackList();
+            
+            // Запрос разрешения
+            navigator.geolocation.getCurrentPosition(
+                () => {
+                    // Успешное получение разрешения
+                    isTracking = true;
+                    updateUI();
+                    
+                    // Настройки геолокации
+                    const options = {
+                        enableHighAccuracy: true,
+                        maximumAge: 0,
+                        timeout: 10000
+                    };
+                    
+                    // Начало отслеживания
+                    watchId = navigator.geolocation.watchPosition(
+                        handlePositionUpdate,
+                        handlePositionError,
+                        options
+                    );
+                },
+                (error) => {
+                    // Ошибка получения разрешения
+                    updateStatus(`Ошибка: ${error.message}`, false);
+                }
+            );
+        }
+        
+        // Обработка обновления позиции
+        function handlePositionUpdate(position) {
+            const currentTime = Date.now();
+            
+            // Фиксация позиции не чаще чем раз в 3 секунды
+            if (currentTime - lastRecordTime >= 3000) {
+                lastRecordTime = currentTime;
+                
+                const { latitude, longitude } = position.coords;
+                const timestamp = Math.floor(currentTime / 1000);
+                const date = new Date(currentTime);
+                
+                // Сохранение данных
+                locations.unshift({
+                    timestamp,
+                    time: date.toLocaleTimeString(),
+                    latitude,
+                    longitude
+                });
+                
+                // Обновление интерфейса
+                updateTrackList();
+                updateLastUpdate(date);
+                updateUI();
+                
+                // Анимация для визуального подтверждения
+                statusIndicator.classList.add('pulse');
+                setTimeout(() => statusIndicator.classList.remove('pulse'), 500);
+            }
+        }
+        
+        // Обработка ошибок геолокации
+        function handlePositionError(error) {
+            let message = "Ошибка геолокации: ";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message += "Доступ запрещен";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message += "Данные недоступны";
+                    break;
+                case error.TIMEOUT:
+                    message += "Таймаут запроса";
+                    break;
+                default:
+                    message += "Неизвестная ошибка";
+            }
+            updateStatus(message, false);
         }
         
         // Остановка отслеживания
         function stopTracking() {
-            isTracking = false;
-            clearInterval(trackingInterval);
-            toggleBtn.textContent = "Старт";
-            statusText.textContent = "Статус: Остановлено";
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
             
-            // Сохраняем в файл
-            saveToFile();
+            isTracking = false;
+            updateStatus("Трекинг остановлен", false);
+            updateUI();
         }
         
-        // Сохранение в TXT
-        function saveToFile() {
-            if (locations.length === 0) return;
-            
-            const content = locations.join('\n');
-            const blob = new Blob([content], { type: 'text/plain' });
-            
-            // Создаем ссылку для скачивания
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'location_track.txt';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        // Очистка трека
+        function clearTrack() {
+            locations = [];
+            updateTrackList();
+            updateUI();
         }
+        
+        // Обновление списка координат
+        function updateTrackList() {
+            if (locations.length === 0) {
+                trackList.innerHTML = '<div class="empty-list">Нет записанных координат</div>';
+                pointCounter.textContent = "0 точек";
+                return;
+            }
+            
+            // Обновление счетчика
+            pointCounter.textContent = `${locations.length} ${pluralize(locations.length, ['точка', 'точки', 'точек'])}`;
+            
+            // Генерация списка
+            let html = '';
+            locations.forEach(loc => {
+                html += `
+                <div class="location-item">
+                    <div class="location-time">${loc.time}</div>
+                    <div class="location-coords">
+                        <div>Широта: <span class="coord-value">${loc.latitude.toFixed(6)}</span></div>
+                    </div>
+                    <div class="location-coords">
+                        <div>Долгота: <span class="coord-value">${loc.longitude.toFixed(6)}</span></div>
+                    </div>
+                </div>
+                `;
+            });
+            trackList.innerHTML = html;
+        }
+        
+        // Обновление статуса
+        function updateStatus(message, isActive) {
+            statusText.textContent = message;
+            statusIndicator.className = isActive ? 'active' : '';
+        }
+        
+        // Обновление времени последнего обновления
+        function updateLastUpdate(date) {
+            const timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            lastUpdate.textContent = `Последнее: ${timeString}`;
+        }
+        
+        // Обновление интерфейса
+        function updateUI() {
+            // Кнопка старт/стоп
+            toggleBtn.textContent = isTracking ? "Стоп" : "Старт";
+            toggleBtn.style.background = isTracking 
+                ? "linear-gradient(to right, #ff9966, #ff5e62)" 
+                : "linear-gradient(to right, #4dff4d, #00cc00)";
+            
+            // Кнопка очистки
+            clearBtn.disabled = locations.length === 0;
+            
+            // Статус
+            updateStatus(isTracking ? "Идет запись..." : "Трекинг остановлен", isTracking);
+            
+            // Для iOS: дополнительная информация
+            if (isIOS && isTracking) {
+                iosWarning.style.display = 'block';
+            }
+        }
+        
+        // Вспомогательная функция для склонения слов
+        function pluralize(n, forms) {
+            let idx;
+            if (n % 10 === 1 && n % 100 !== 11) {
+                idx = 0; // одна точка
+            } else if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) {
+                idx = 1; // две точки
+            } else {
+                idx = 2; // пять точек
+            }
+            return `${n} ${forms[idx]}`;
+        }
+        
+        // Инициализация статуса
+        updateStatus("Трекинг остановлен", false);
+        updateUI();
     </script>
 </body>
 </html>
