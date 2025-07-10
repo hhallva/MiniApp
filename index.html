@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Location Tracker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 20px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #status {
+            margin-top: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <button id="toggleBtn">Старт</button>
+    <div id="status">Статус: Остановлено</div>
+    <script>
+        // Инициализация
+        const webApp = Telegram.WebApp;
+        webApp.ready();
+        let isTracking = false;
+        let trackingInterval;
+        let locations = [];
+        
+        // Элементы интерфейса
+        const toggleBtn = document.getElementById('toggleBtn');
+        const statusText = document.getElementById('status');
+        
+        // Обработчик кнопки
+        toggleBtn.addEventListener('click', () => {
+            if (!isTracking) {
+                startTracking();
+            } else {
+                stopTracking();
+            }
+        });
+        
+        // Запуск отслеживания
+        function startTracking() {
+            locations = []; // Очищаем предыдущие данные
+            isTracking = true;
+            toggleBtn.textContent = "Стоп";
+            statusText.textContent = "Статус: Запись...";
+            
+            // Получаем позицию каждые 3 секунды
+            trackingInterval = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const { latitude, longitude } = position.coords;
+                        const timestamp = Math.floor(Date.now() / 1000); // UNIX-время
+                        locations.push(`${timestamp},${latitude},${longitude}`);
+                        console.log(`Записано: ${timestamp}, ${latitude}, ${longitude}`);
+                    },
+                    error => {
+                        console.error("Ошибка геолокации:", error);
+                    }
+                );
+            }, 3000);
+        }
+        
+        // Остановка отслеживания
+        function stopTracking() {
+            isTracking = false;
+            clearInterval(trackingInterval);
+            toggleBtn.textContent = "Старт";
+            statusText.textContent = "Статус: Остановлено";
+            
+            // Сохраняем в файл
+            saveToFile();
+        }
+        
+        // Сохранение в TXT
+        function saveToFile() {
+            if (locations.length === 0) return;
+            
+            const content = locations.join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            
+            // Создаем ссылку для скачивания
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'location_track.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
